@@ -3,12 +3,12 @@ KDIR=/lib/modules/$(CURRENT)/build
 PWD=$(shell pwd)
 DEST=/lib/modules/$(CURRENT)/misc
 
-TARGET=rtc_device
+TARGET=rtc_mod
 
 obj-m:=$(TARGET).o
 
 default:
-	$(MAKE) -C $(KDIR) M=$(PWD) modules
+	$(MAKE) -C $(KDIR) M=$(PWD) modules -Wall
 	
 clean:
 	@rm -f *.o .*.cmd .*.flags *.mod.c *.order
