@@ -1,58 +1,20 @@
-// модуль устройства RCT
-#include <linux/fs.h>
-#include <linux/module.h>
-#include <linux/uaccess.h>
-#include <linux/proc_fs.h>
-#include <linux/device.h>
-#include <linux/version.h>
-#include <linux/init.h>
-#include <linux/cdev.h>
-//#include "mod.h"
+#include "rtc_mod.h"
 
-
-// Добавление устройства в /dev/rtcN
-
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Yury Getman <stagg7777@gmail.com>");
-
-// инициализация модуля
-static int __init rtc_init(void);
-// удаление модуля
-static void __exit rtc_exit(void);
-// чтение данных
-static ssize_t rtc_read(struct file *f, char *buf, size_t cnt, loff_t *ppos);
-// запись
-static ssize_t rtc_write(struct file *f, const char *buf, size_t cnt, loff_t *pos);
-// создание устройства
-static int rtc_open(struct inode *n, struct file *f);
-// удаление устройства
-static int rtc_release(struct inode *n, struct file *f);
-
-// диапазон номеров устройств(миноров)
-#define DEV_FIRST 0
-#define DEV_CNT 1
-#define DEV_NAME "rtc_"
-// имя модуля
-#define MOD_NAME "rtc_module"
-#define LEN_MSG 150
-#define NAME_NODE "rtc_0"
-
-static char* hello = "Hello\n";
-static int major=0;
-static int deviceOpen = 0;
-static struct cdev hcdev;
-static struct class *devclass;
+// реализовать возможность добавления подсчета времени
+// возможность добавления нескольких устройств
 
 // иницилазация параметров и реализация функций модуля
 // читаем параметр major
-module_param(major, int, S_IRUGO); // S_IRUGO - может читаться, кем угодно, но не может быть изменен
+#include <linux/rtc.h>
+
+static char *get_now_time(void){
+	
+}
 
 static char *get_buf(void){
 	static char buf_msg[LEN_MSG+1] = "..1..2..3..4..5\n";
 	return buf_msg;
 }
-
-// ЭТО ВСЕ В dev
 
 static int rtc_open(struct inode *n, struct file *f){
 	if(deviceOpen)
@@ -95,14 +57,6 @@ static ssize_t rtc_write(struct file *f, const char *buf, size_t cnt, loff_t *pp
 	printk(KERN_INFO "put %d bytes\n", len);
 	return len;
 }
-
-static const struct file_operations dev_fops = {
-	.owner = THIS_MODULE,
-	.open = rtc_open,
-	.release = rtc_release,
-	.read = rtc_read,
-	.write = rtc_write
-};
 
 static int __init rtc_init(void){
 	int res;
@@ -163,11 +117,6 @@ static void __exit rtc_exit(void){
 	unregister_chrdev_region(MKDEV(major, DEV_FIRST), DEV_CNT);
 	printk(KERN_INFO "rtc_module removed\n");
 } 
-
-module_init(rtc_init);
-module_exit(rtc_exit);
-
-//
 
 
 
