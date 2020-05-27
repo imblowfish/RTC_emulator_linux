@@ -1,4 +1,4 @@
-Тестовое задание для syntacore
+###Тестовое задание для syntacore###
 
 Для сборки модуля просто прописать make
 Инициализация модуля sudo insmod rtc_mod.ko
@@ -17,4 +17,6 @@
 
 sudo insmod major=1 h_shift=3 mode=0 time_param=1
 sudo echo m 2 > /proc/rtc_0
+Результат тестирования:
+![image](https://github.com/imblowfish/RTC_emulator_linux/blob/master/test_res.png)
 
