@@ -23,7 +23,7 @@ static int check_params(void){
 	return 0;
 }
 
-static int check_param(char par, int val){
+static int update_param(char par, int val){
 	switch(par){
 		case 'h':
 			h_shift = val;
@@ -45,6 +45,7 @@ static int check_param(char par, int val){
 
 static long int update_last_time(void){
 	long int diff = get_diff(last_time, h_shift);
+	printk(KERN_INFO "diff before = %d\n", diff);
 	int seed;
 	switch(mode){
 		case FAST_MODE:
@@ -65,6 +66,7 @@ static long int update_last_time(void){
 		
 		break;
 	}
+	printk(KERN_INFO "diff = %d\n", diff);
 	last_time += diff;
 	return 0;
 }
@@ -93,7 +95,9 @@ static void parse_parameters(char *pars){
 	val *= sign;
 	printk(KERN_INFO "%c %d\n", modified_param, val);
 	// проверяем новые значения параметров
-	
+	update_param(modified_param, val);
+	last_time = get_now_seconds(h_shift);
+	printk(KERN_INFO "updated UTC%+d mode=%d time_param=%d\n", h_shift, mode, time_param);
 }
 
 static int rtc_open(struct inode *n, struct file *f){
@@ -109,7 +113,10 @@ static int rtc_release(struct inode *n, struct file *f){
 }
 
 static ssize_t rtc_read(struct file *f, char *buf, size_t cnt, loff_t *ppos){
+	update_last_time();
+	struct time_info ti = time_info_from_seconds(last_time);
 	char *buf_msg = get_buf();
+	sprintf(buf_msg, "%d:%d:%d %d-%d-%d\n", ti.hour, ti.minute, ti.second, ti.day, ti.month, ti.year);
 	int res;
 	if(*ppos >= strlen(buf_msg)){
 		*ppos = 0;
