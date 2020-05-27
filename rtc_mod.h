@@ -2,6 +2,8 @@
 #include "rtc_defs.h"
 #include "timer.h"
 
+#define VAL_SIZE
+
 #define NORM_MODE 0
 #define FAST_MODE 1
 #define SLOW_MODE 2

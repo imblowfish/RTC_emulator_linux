@@ -1,5 +1,7 @@
 #include "rtc_mod.h"
 #include <linux/random.h>
+
+#include <linux/ctype.h>
 //#include "timer.h"
 
 // реализовать возможность добавления подсчета времени
@@ -9,7 +11,7 @@
 // читаем параметр major
 
 static int check_params(void){
-	if(mode < 0 || mode > 3){
+	if(mode < NORM_MODE || mode > RAND_MODE){
 		printk(KERN_ERR "wrong rtc mode %d, must be %d, %d, %d, %d\n", mode, NORM_MODE, FAST_MODE, SLOW_MODE, RAND_MODE);
 		return -1;
 	}
@@ -19,6 +21,26 @@ static int check_params(void){
 	}
 	printk(KERN_INFO "UTC%+d mode=%d time_param=%d\n", h_shift, mode, time_param);
 	return 0;
+}
+
+static int check_param(char par, int val){
+	switch(par){
+		case 'h':
+			h_shift = val;
+		break;
+		case 'm':
+			if(val < NORM_MODE || val > RAND_MODE)
+				break;
+			mode = val;
+		break;
+		case 't':
+			if(val <= 0){
+				time_param = 1;
+				break;
+			}
+			time_param = val;
+		break;
+	}
 }
 
 static long int update_last_time(void){
@@ -53,29 +75,25 @@ static char* get_buf(void){
 }
 
 static void parse_parameters(char *pars){
-	if(!pars || !*pars)
-		return;
-	int i=0;
-	int str_size = strlen(pars);
-	while(i < str_size){
-		if(pars[i] > ' ')
-			break;
-		i++;
+	while(isspace(*pars))
+		pars++;
+	// получаем имя параметра
+	char modified_param = *pars++;
+	// ищем начало цифр
+	while(isspace(*pars))
+		pars++;
+	char sign = 1;
+	if(*pars == '-'){
+		sign = -1;
+		pars++;
 	}
-	char modified_param = pars[i++];
-	printk(KERN_INFO "modify %c with val %s\n", modified_param, ""); 
-	/*char modified_param = pars[0];
-	switch(modified_param){
-		case 'h':
-			
-		break;
-		case 'm':
-			
-		break;
-		case 't':
-			
-		break;
-	}*/
+	int val = 0;
+	while(isdigit(*pars))
+		val = val * 10 + *pars++ - '0';
+	val *= sign;
+	printk(KERN_INFO "%c %d\n", modified_param, val);
+	// проверяем новые значения параметров
+	
 }
 
 static int rtc_open(struct inode *n, struct file *f){
