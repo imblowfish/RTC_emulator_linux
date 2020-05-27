@@ -1,8 +1,18 @@
 #include "mod.h"
 #include "rtc_defs.h"
+#include "timer.h"
 
-static char* hello = "Hello\n";
+#define NORM_MODE 0
+#define FAST_MODE 1
+#define SLOW_MODE 2
+#define RAND_MODE 3
+
 static int major=0;
+static int h_shift = 0;	// UTC default
+static int mode = 0;	// normal default
+static int time_param = 1;
+
+static long int last_time;
 static int deviceOpen = 0;
 static struct cdev hcdev;
 static struct class *devclass;
@@ -25,3 +35,6 @@ static const struct file_operations dev_fops = {
 };
 
 module_param(major, int, S_IRUGO);
+module_param(h_shift, int, 0);
+module_param(mode, int, 0);
+module_param(time_param, int, 0);

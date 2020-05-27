@@ -1,19 +1,81 @@
 #include "rtc_mod.h"
+#include <linux/random.h>
+//#include "timer.h"
 
 // реализовать возможность добавления подсчета времени
 // возможность добавления нескольких устройств
 
 // иницилазация параметров и реализация функций модуля
 // читаем параметр major
-#include <linux/rtc.h>
 
-static char *get_now_time(void){
-	
+static int check_params(void){
+	if(mode < 0 || mode > 3){
+		printk(KERN_ERR "wrong rtc mode %d, must be %d, %d, %d, %d\n", mode, NORM_MODE, FAST_MODE, SLOW_MODE, RAND_MODE);
+		return -1;
+	}
+	if(!time_param){
+		printk(KERN_ERR "time param is ZERO\n");
+		return -1;
+	}
+	printk(KERN_INFO "UTC%+d mode=%d time_param=%d\n", h_shift, mode, time_param);
+	return 0;
 }
 
-static char *get_buf(void){
-	static char buf_msg[LEN_MSG+1] = "..1..2..3..4..5\n";
+static long int update_last_time(void){
+	long int diff = get_diff(last_time, h_shift);
+	int seed;
+	switch(mode){
+		case FAST_MODE:
+			diff *= time_param;
+		break;
+		case SLOW_MODE:
+			diff /= time_param;
+		break;
+		case RAND_MODE:
+			get_random_bytes(&seed, sizeof(seed));
+			seed %= 10;
+			if(seed < 0)
+				diff /= -seed;
+			else
+				diff *= seed;
+		break;
+		default:
+		
+		break;
+	}
+	last_time += diff;
+	return 0;
+}
+
+static char* get_buf(void){
+	static char buf_msg[LEN_MSG+1];
 	return buf_msg;
+}
+
+static void parse_parameters(char *pars){
+	if(!pars || !*pars)
+		return;
+	int i=0;
+	int str_size = strlen(pars);
+	while(i < str_size){
+		if(pars[i] > ' ')
+			break;
+		i++;
+	}
+	char modified_param = pars[i++];
+	printk(KERN_INFO "modify %c with val %s\n", modified_param, ""); 
+	/*char modified_param = pars[0];
+	switch(modified_param){
+		case 'h':
+			
+		break;
+		case 'm':
+			
+		break;
+		case 't':
+			
+		break;
+	}*/
 }
 
 static int rtc_open(struct inode *n, struct file *f){
@@ -31,10 +93,8 @@ static int rtc_release(struct inode *n, struct file *f){
 static ssize_t rtc_read(struct file *f, char *buf, size_t cnt, loff_t *ppos){
 	char *buf_msg = get_buf();
 	int res;
-	printk(KERN_INFO "read: %ld bytes {ppos%}\n", (long)cnt, *ppos);
 	if(*ppos >= strlen(buf_msg)){
 		*ppos = 0;
-		printk(KERN_INFO "EOF\n");
 		return 0;
 	}
 	if(cnt > strlen(buf_msg) - *ppos){
@@ -42,23 +102,24 @@ static ssize_t rtc_read(struct file *f, char *buf, size_t cnt, loff_t *ppos){
 	}
 	res = copy_to_user((void*)buf, buf_msg + *ppos, cnt);
 	*ppos += cnt;
-	printk(KERN_INFO "return %ld bytes\n", (long)cnt);
 	return cnt;
 }
 
 static ssize_t rtc_write(struct file *f, const char *buf, size_t cnt, loff_t *ppos){
-	//proc
 	char *buf_msg = get_buf();
 	int res;
 	uint len = cnt < LEN_MSG? cnt: LEN_MSG;
-	printk("write: %ld bytes\n", (long)cnt);
+	printk(KERN_INFO "get new parameters\n");
 	res = copy_from_user(buf_msg, (void*)buf, len);
 	buf_msg[len] = '\0';
-	printk(KERN_INFO "put %d bytes\n", len);
+	parse_parameters(buf_msg);
 	return len;
 }
 
 static int __init rtc_init(void){
+	if(check_params() < 0)
+		return -1;
+	last_time = get_now_seconds(h_shift);
 	int res;
 	//!!!
 	struct proc_dir_entry *own_proc_node;
