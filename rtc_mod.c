@@ -1,14 +1,6 @@
 #include "rtc_mod.h"
 #include <linux/random.h>
-
 #include <linux/ctype.h>
-//#include "timer.h"
-
-// реализовать возможность добавления подсчета времени
-// возможность добавления нескольких устройств
-
-// иницилазация параметров и реализация функций модуля
-// читаем параметр major
 
 static int check_params(void){
 	if(mode < NORM_MODE || mode > RAND_MODE){
